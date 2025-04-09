@@ -1,0 +1,23 @@
+{
+  "images" : [
+    {
+      "filename" : "openart-image_wLzGLO3z_1743080694410_raw.png",
+      "idiom" : "universal",
+      "scale" : "1x"
+    },
+    {
+      "filename" : "openart-image_wLzGLO3z_1743080694410_raw 1.png",
+      "idiom" : "universal",
+      "scale" : "2x"
+    },
+    {
+      "filename" : "openart-image_wLzGLO3z_1743080694410_raw 2.png",
+      "idiom" : "universal",
+      "scale" : "3x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
