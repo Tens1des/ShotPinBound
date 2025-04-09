@@ -11,30 +11,29 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		FD4B9D762DA3E13B0092AA0C /* Exceptions for "ShotPinBound Shared" folder in "ShotPinBound iOS" target */ = {
+		FD4B9D762DA3E13B0092AA0C /* Exceptions for "ShotPinBound" folder in "ShotPinBound iOS" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				"/Localized: LaunchScreen.storyboard",
+				"/Localized: Main.storyboard",
 				Actions.sks,
+				AppDelegate.swift,
 				Assets.xcassets,
 				GameScene.sks,
 				GameScene.swift,
+				GameViewController.swift,
 			);
 			target = FD4B9D642DA3E13B0092AA0C /* ShotPinBound iOS */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		FD4B9D5C2DA3E13A0092AA0C /* ShotPinBound Shared */ = {
+		FD4B9D5C2DA3E13A0092AA0C /* ShotPinBound */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				FD4B9D762DA3E13B0092AA0C /* Exceptions for "ShotPinBound Shared" folder in "ShotPinBound iOS" target */,
+				FD4B9D762DA3E13B0092AA0C /* Exceptions for "ShotPinBound" folder in "ShotPinBound iOS" target */,
 			);
-			path = "ShotPinBound Shared";
-			sourceTree = "<group>";
-		};
-		FD4B9D672DA3E13B0092AA0C /* ShotPinBound iOS */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "ShotPinBound iOS";
+			path = ShotPinBound;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -53,8 +52,7 @@
 		FD4B9D572DA3E13A0092AA0C = {
 			isa = PBXGroup;
 			children = (
-				FD4B9D5C2DA3E13A0092AA0C /* ShotPinBound Shared */,
-				FD4B9D672DA3E13B0092AA0C /* ShotPinBound iOS */,
+				FD4B9D5C2DA3E13A0092AA0C /* ShotPinBound */,
 				FD4B9D662DA3E13B0092AA0C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -81,9 +79,6 @@
 			buildRules = (
 			);
 			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				FD4B9D672DA3E13B0092AA0C /* ShotPinBound iOS */,
 			);
 			name = "ShotPinBound iOS";
 			packageProductDependencies = (
