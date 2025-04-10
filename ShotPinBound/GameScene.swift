@@ -33,6 +33,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     // MARK: - Игровые переменные
     public var currentLevel: Int = 1
+    public var ballImageName: String = "Ball"
     private var shotsRemaining: Int = 3
     private var starsCollected: Int = 0
     private var isAiming: Bool = false
@@ -132,13 +133,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func setupGameObjects() {
         // Создание платформы
         platform = SKSpriteNode(imageNamed: "Platform")
-        platform.position = CGPoint(x: 40, y: ground.position.y + ground.size.height / 2 + platform.size.height / 2 + 120) // Поднимаем еще выше
+        platform.position = CGPoint(x: 40, y: ground.position.y + ground.size.height / 2 + platform.size.height / 2 + 120)
         platform.zPosition = 1
-        platform.size = CGSize(width: 60, height: 20) // Уменьшаем размер платформы
+        platform.size = CGSize(width: 60, height: 20)
         addChild(platform)
         
-        // Создание мяча
-        ball = SKSpriteNode(imageNamed: "Ball")
+        // Создание мяча с выбранным скином
+        ball = SKSpriteNode(imageNamed: ballImageName)
         ball.position = CGPoint(x: platform.position.x, y: platform.position.y + platform.size.height / 2 + ball.size.height / 2)
         ball.zPosition = 2
         ball.size = CGSize(width: 30, height: 30)
@@ -606,6 +607,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Сброс физики мяча
         ball.removeFromParent()
         ball.physicsBody = nil
+        
+        // Пересоздаем мяч с текущим скином
+        ball = SKSpriteNode(imageNamed: ballImageName)
+        ball.size = CGSize(width: 30, height: 30)
+        ball.zPosition = 2
         
         // Размещение мяча на платформе
         ball.position = CGPoint(x: platform.position.x, y: platform.position.y + platform.size.height / 2 + ball.size.height / 2)

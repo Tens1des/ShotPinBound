@@ -281,10 +281,13 @@ struct ShopView: View {
     // Имена активированных элементов
     private let activeElement1Name = "ActiveElement1"
     
+    // Стоимость первого элемента
+    private let element1Cost = 100
+    
     // Состояние активации элементов
     @State private var isElement1Active = false
     @State private var isElement1Purchased = false
-    @State private var totalCoins = 0 // Добавляем состояние для хранения количества монет
+    @State private var totalCoins = 0
     
     var onBack: () -> Void
     
@@ -315,9 +318,9 @@ struct ShopView: View {
                 // Фон
                 Image(backgroundImageName)
                     .resizable()
-                    .scaledToFill()
-                    .frame(width: screenWidth, height: screenHeight)
-                    .edgesIgnoringSafeArea(.all)
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
                     // Верхняя панель
@@ -362,10 +365,25 @@ struct ShopView: View {
                                 horizontalSpacing: horizontalSpacing,
                                 isActive: isElement1Active,
                                 isPurchased: isElement1Purchased,
+                                cost: element1Cost,
                                 onTap: {
                                     if !isElement1Purchased {
-                                        isElement1Active = true
-                                        isElement1Purchased = true
+                                        // Проверяем, достаточно ли монет
+                                        if totalCoins >= element1Cost {
+                                            // Списываем монеты
+                                            totalCoins -= element1Cost
+                                            UserDefaults.standard.set(totalCoins, forKey: "totalCoins")
+                                            
+                                            // Активируем элемент
+                                            isElement1Active = true
+                                            isElement1Purchased = true
+                                            UserDefaults.standard.set(true, forKey: "isElement1Purchased")
+                                            UserDefaults.standard.set(true, forKey: "isElement1Active")
+                                        }
+                                    } else {
+                                        // Если элемент уже куплен, просто переключаем его активность
+                                        isElement1Active.toggle()
+                                        UserDefaults.standard.set(isElement1Active, forKey: "isElement1Active")
                                     }
                                 }
                             )
@@ -420,19 +438,21 @@ struct ShopView: View {
                         }
                         .padding(.vertical, verticalPadding)
                         .padding(.horizontal, baseUnit * 0.5)
-                        .padding(.bottom, safeBottom)
+                        .padding(.bottom, safeBottom + baseUnit * 2)
                     }
                 }
             }
         }
         .edgesIgnoringSafeArea(.all)
         .onAppear {
-            // Загружаем количество монет при появлении экрана
+            // Загружаем количество монет и состояние элемента при появлении экрана
             totalCoins = UserDefaults.standard.integer(forKey: "totalCoins")
+            isElement1Purchased = UserDefaults.standard.bool(forKey: "isElement1Purchased")
+            isElement1Active = UserDefaults.standard.bool(forKey: "isElement1Active")
         }
     }
     
-    // Вспомогательная функция для создания ряда элементов магазина
+    // Обновленная вспомогательная функция для создания ряда элементов магазина
     private func shopItemRow(
         skinName: String,
         elementName: String,
@@ -441,6 +461,7 @@ struct ShopView: View {
         horizontalSpacing: CGFloat,
         isActive: Bool,
         isPurchased: Bool,
+        cost: Int = 0,
         onTap: @escaping () -> Void
     ) -> some View {
         HStack(spacing: horizontalSpacing) {
@@ -449,14 +470,25 @@ struct ShopView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: skinSize)
             
-            Button(action: onTap) {
-                Image(elementName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: elementWidth)
+            ZStack {
+                Button(action: onTap) {
+                    Image(elementName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: elementWidth)
+                }
+                .disabled((!isPurchased && totalCoins < cost) || isPurchased)
+                .opacity(isActive || isPurchased ? 1.0 : 0.5)
+                
+                // Показываем стоимость, если элемент не куплен
+                if !isPurchased && cost > 0 {
+                    Text("\(cost) 💰")
+                        .foregroundColor(.yellow)
+                        .font(.system(size: skinSize * 0.4, weight: .bold))
+                        .shadow(color: .black, radius: 2)
+                        .position(x: elementWidth * 0.5, y: elementWidth * 0.85)
+                }
             }
-            .disabled(isPurchased)
-            .opacity(isActive || isPurchased ? 1.0 : 0.5)
         }
     }
 }
@@ -464,11 +496,12 @@ struct ShopView: View {
 // Представление для экрана достижений
 struct AchievesView: View {
     // Имена файлов изображений
-    private let backgroundImageName = "AchievesBG" // Фон экрана достижений
-    private let achievesPanelName = "AchievesPanel" // Панель для отображения достижений
+    private let backgroundImageName = "AchievesBG"
+    private let achievesPanelName = "AchievesPanel"
     private let backButtonName = "BackButton"
-    private let achievesTitleName = "AchievesTitle" // Заголовок экрана достижений
-    private let achieveStarName = "AchieveStar" // Звездочка для достижений
+    private let achievesTitleName = "AchievesTitle"
+    private let achieveStarName = "AchieveStar" // Обычная звездочка
+    private let achieveGoldStarName = "AchieveGoldStar" // Золотая звездочка для пройденных достижений
     
     // Имена изображений достижений
     private let achieve1Name = "Achieve1"
@@ -476,6 +509,8 @@ struct AchievesView: View {
     private let achieve3Name = "Achieve3"
     private let achieve4Name = "Achieve4"
     private let achieve5Name = "Achieve5"
+    
+    @State private var isFirstLevelCompleted = false
     
     var onBack: () -> Void
     
@@ -497,7 +532,7 @@ struct AchievesView: View {
             let achieveWidth = baseUnit * (isIpad ? 5.5 : 5.0) * (isLandscape ? 0.85 : 1.0)
             let achieveHeight = baseUnit * (isIpad ? 2.0 : 1.8) * (isLandscape ? 0.85 : 1.0)
             let spacing = baseUnit * (isIpad ? 0.2 : 0.3)
-            let starSize = baseUnit * (isIpad ? 0.8 : 1.0)
+            let starSize = baseUnit * (isIpad ? 0.6 : 0.8) // Уменьшенный размер звезд
             let panelPadding = baseUnit * (isIpad ? 0.5 : 0.3)
             let panelWidth = screenWidth * (isLandscape ? 0.85 : 0.95)
             
@@ -505,9 +540,9 @@ struct AchievesView: View {
                 // Фон
                 Image(backgroundImageName)
                     .resizable()
-                    .scaledToFill()
-                    .frame(width: screenWidth, height: screenHeight)
-                    .edgesIgnoringSafeArea(.all)
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
                     // Верхняя панель
@@ -539,7 +574,8 @@ struct AchievesView: View {
                                 imageName: achieve1Name,
                                 width: achieveWidth,
                                 height: achieveHeight,
-                                starSize: starSize
+                                starSize: starSize,
+                                useGoldStar: isFirstLevelCompleted
                             )
                             
                             // Достижение 2
@@ -547,7 +583,8 @@ struct AchievesView: View {
                                 imageName: achieve2Name,
                                 width: achieveWidth,
                                 height: achieveHeight,
-                                starSize: starSize
+                                starSize: starSize,
+                                useGoldStar: isFirstLevelCompleted
                             )
                             
                             // Достижение 3
@@ -555,7 +592,8 @@ struct AchievesView: View {
                                 imageName: achieve3Name,
                                 width: achieveWidth,
                                 height: achieveHeight,
-                                starSize: starSize
+                                starSize: starSize,
+                                useGoldStar: false
                             )
                             
                             // Достижение 4
@@ -563,7 +601,8 @@ struct AchievesView: View {
                                 imageName: achieve4Name,
                                 width: achieveWidth,
                                 height: achieveHeight,
-                                starSize: starSize
+                                starSize: starSize,
+                                useGoldStar: false
                             )
                             
                             // Достижение 5
@@ -571,7 +610,8 @@ struct AchievesView: View {
                                 imageName: achieve5Name,
                                 width: achieveWidth,
                                 height: achieveHeight,
-                                starSize: starSize
+                                starSize: starSize,
+                                useGoldStar: false
                             )
                         }
                         .padding(.vertical, baseUnit * 0.3)
@@ -582,7 +622,7 @@ struct AchievesView: View {
                                 .scaledToFill()
                         )
                         .frame(width: panelWidth)
-                        .padding(.bottom, safeBottom + baseUnit * 0.5)
+                        .padding(.bottom, safeBottom + baseUnit * 2)
                         .padding(.top, baseUnit * 0.5)
                     }
                     .padding(.horizontal, baseUnit * 0.2)
@@ -592,17 +632,22 @@ struct AchievesView: View {
             }
         }
         .edgesIgnoringSafeArea(.all)
+        .onAppear {
+            // Проверяем, пройден ли первый уровень
+            let currentLevel = UserDefaults.standard.integer(forKey: "currentLevel")
+            isFirstLevelCompleted = currentLevel > 1
+        }
     }
     
-    // Вспомогательная функция для создания карточки достижения
-    private func achievementCard(imageName: String, width: CGFloat, height: CGFloat, starSize: CGFloat) -> some View {
+    // Обновленная вспомогательная функция для создания карточки достижения
+    private func achievementCard(imageName: String, width: CGFloat, height: CGFloat, starSize: CGFloat, useGoldStar: Bool) -> some View {
         ZStack(alignment: .trailing) {
             Image(imageName)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: width, height: height)
             
-            Image(achieveStarName)
+            Image(useGoldStar ? achieveGoldStarName : achieveStarName)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: starSize)
@@ -988,6 +1033,10 @@ class GameViewController: UIViewController {
         let scene = GameScene(size: view.bounds.size)
         scene.scaleMode = .aspectFill
         scene.currentLevel = level // Устанавливаем уровень
+        
+        // Проверяем, активирован ли первый элемент в магазине
+        let isElement1Active = UserDefaults.standard.bool(forKey: "isElement1Active")
+        scene.ballImageName = isElement1Active ? "BallSkin" : "Ball" // Устанавливаем имя изображения шарика
         
         // Применяем переход между сценами
         let transition = SKTransition.fade(withDuration: 1.0)
