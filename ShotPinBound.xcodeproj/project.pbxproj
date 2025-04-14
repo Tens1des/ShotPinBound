@@ -19,9 +19,14 @@
 				Actions.sks,
 				AppDelegate.swift,
 				Assets.xcassets,
+				backgroundMusic.mp3,
+				ballHitSound.mp3,
+				buttonClick.mp3,
 				GameScene.sks,
 				GameScene.swift,
 				GameViewController.swift,
+				star_collect.mp3,
+				victory.mp3,
 			);
 			target = FD4B9D642DA3E13B0092AA0C /* ShotPinBound iOS */;
 		};

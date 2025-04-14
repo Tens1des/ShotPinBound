@@ -9,6 +9,7 @@ import UIKit
 import SpriteKit
 import GameplayKit
 import SwiftUI
+import AVFoundation
 
 // Представление для экрана уровней
 struct LevelsView: View {
@@ -479,15 +480,6 @@ struct ShopView: View {
                 }
                 .disabled((!isPurchased && totalCoins < cost) || isPurchased)
                 .opacity(isActive || isPurchased ? 1.0 : 0.5)
-                
-                // Показываем стоимость, если элемент не куплен
-                if !isPurchased && cost > 0 {
-                    Text("\(cost) 💰")
-                        .foregroundColor(.yellow)
-                        .font(.system(size: skinSize * 0.4, weight: .bold))
-                        .shadow(color: .black, radius: 2)
-                        .position(x: elementWidth * 0.5, y: elementWidth * 0.85)
-                }
             }
         }
     }
@@ -500,8 +492,8 @@ struct AchievesView: View {
     private let achievesPanelName = "AchievesPanel"
     private let backButtonName = "BackButton"
     private let achievesTitleName = "AchievesTitle"
-    private let achieveStarName = "AchieveStar" // Обычная звездочка
-    private let achieveGoldStarName = "AchieveGoldStar" // Золотая звездочка для пройденных достижений
+    private let achieveStarName = "AchieveStar"
+    private let achieveGoldStarName = "AchieveGoldStar"
     
     // Имена изображений достижений
     private let achieve1Name = "Achieve1"
@@ -532,7 +524,7 @@ struct AchievesView: View {
             let achieveWidth = baseUnit * (isIpad ? 5.5 : 5.0) * (isLandscape ? 0.85 : 1.0)
             let achieveHeight = baseUnit * (isIpad ? 2.0 : 1.8) * (isLandscape ? 0.85 : 1.0)
             let spacing = baseUnit * (isIpad ? 0.2 : 0.3)
-            let starSize = baseUnit * (isIpad ? 0.6 : 0.8) // Уменьшенный размер звезд
+            let starSize = baseUnit * (isIpad ? 0.6 : 0.8)
             let panelPadding = baseUnit * (isIpad ? 0.5 : 0.3)
             let panelWidth = screenWidth * (isLandscape ? 0.85 : 0.95)
             
@@ -542,7 +534,7 @@ struct AchievesView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .ignoresSafeArea()
+                    .edgesIgnoringSafeArea(.all)
                 
                 VStack(spacing: 0) {
                     // Верхняя панель
@@ -712,9 +704,11 @@ struct SettingsView: View {
     private let soundLabelName = "SoundLabel" // Лейбл для звуков
     
     // Состояния для прогресс-баров
-    @State private var musicVolume: Float = 0.5
-    @State private var soundVolume: Float = 0.5
+    @State private var musicVolume: Float = UserDefaults.standard.float(forKey: "musicVolume")
+    @State private var soundVolume: Float = UserDefaults.standard.float(forKey: "soundVolume")
     
+    // Добавляем ссылку на GameViewController
+    var gameViewController: GameViewController
     var onBack: () -> Void
     
     var body: some View {
@@ -743,7 +737,10 @@ struct SettingsView: View {
                 VStack(spacing: 0) {
                     // Верхняя панель с кнопкой назад
                     HStack {
-                        Button(action: onBack) {
+                        Button(action: {
+                            gameViewController.playButtonSound() // Воспроизводим звук при нажатии
+                            onBack()
+                        }) {
                             Image(backButtonName)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
@@ -762,10 +759,17 @@ struct SettingsView: View {
                         // Настройка музыки
                         CustomProgressView(value: $musicVolume, label: musicLabelName)
                             .frame(width: progressWidth)
+                            .onChange(of: musicVolume) { newValue in
+                                gameViewController.setMusicVolume(newValue)
+                            }
                         
                         // Настройка звуков
                         CustomProgressView(value: $soundVolume, label: soundLabelName)
                             .frame(width: progressWidth)
+                            .onChange(of: soundVolume) { newValue in
+                                gameViewController.setSoundVolume(newValue)
+                                gameViewController.playButtonSound() // Воспроизводим тестовый звук при изменении громкости
+                            }
                     }
                     .padding(.bottom, baseUnit * 0.2)
                     
@@ -774,6 +778,11 @@ struct SettingsView: View {
             }
         }
         .edgesIgnoringSafeArea(.all)
+        .onAppear {
+            // Загружаем сохраненные настройки громкости при появлении экрана
+            musicVolume = UserDefaults.standard.float(forKey: "musicVolume")
+            soundVolume = UserDefaults.standard.float(forKey: "soundVolume")
+        }
     }
 }
 
@@ -843,12 +852,44 @@ struct TutorialView: View {
 }
 
 class GameViewController: UIViewController {
-
+    
+    // Добавляем переменные для управления музыкой и звуком
+    private var backgroundMusicPlayer: AVAudioPlayer?
+    private var buttonSoundPlayer: AVAudioPlayer?
+    private var victorySound: AVAudioPlayer?
+    private var starCollectSound: AVAudioPlayer?
+    private var ballHitSound: AVAudioPlayer?
+    private var currentVolume: Float = 0.5
+    private var currentSoundVolume: Float = 0.5
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // Загружаем сохраненную громкость
+        currentVolume = UserDefaults.standard.float(forKey: "musicVolume")
+        currentSoundVolume = UserDefaults.standard.float(forKey: "soundVolume")
+        
+        if currentVolume == 0 {
+            currentVolume = 0.5 // Значение по умолчанию
+            UserDefaults.standard.set(currentVolume, forKey: "musicVolume")
+        }
+        
+        if currentSoundVolume == 0 {
+            currentSoundVolume = 0.5 // Значение по умолчанию
+            UserDefaults.standard.set(currentSoundVolume, forKey: "soundVolume")
+        }
+        
         // Начинаем с экрана загрузки
         showLoadingScene()
+        
+        // Запускаем фоновую музыку
+        playBackgroundMusic()
+        
+        // Подготавливаем звуки
+        prepareButtonSound()
+        prepareVictorySound()
+        prepareStarCollectSound()
+        prepareBallHitSound()
         
         // Настраиваем вид
         let skView = self.view as! SKView
@@ -953,7 +994,8 @@ class GameViewController: UIViewController {
                 },
                 onSettingsTapped: { [weak self] in
                     self?.showSettingsScene()
-                }
+                },
+                gameViewController: self
             ))
             menuView.view.frame = self.view.bounds
             menuView.view.backgroundColor = UIColor.clear
@@ -1033,6 +1075,9 @@ class GameViewController: UIViewController {
         let scene = GameScene(size: view.bounds.size)
         scene.scaleMode = .aspectFill
         scene.currentLevel = level // Устанавливаем уровень
+        
+        // Сбрасываем количество собранных звезд
+        scene.starsCollected = 0
         
         // Проверяем, активирован ли первый элемент в магазине
         let isElement1Active = UserDefaults.standard.bool(forKey: "isElement1Active")
@@ -1117,6 +1162,7 @@ class GameViewController: UIViewController {
         
         // Создаем SwiftUI view для настроек
         let settingsView = SettingsView(
+            gameViewController: self,
             onBack: { [weak self] in
                 self?.showMainMenuScene()
             }
@@ -1163,6 +1209,126 @@ class GameViewController: UIViewController {
         
         // Показываем сцену
         skView.presentScene(tutorialScene)
+    }
+
+    // Добавляем методы для управления музыкой
+    private func playBackgroundMusic() {
+        guard let url = Bundle.main.url(forResource: "backgroundMusic", withExtension: "mp3") else {
+            print("Не удалось найти файл музыки")
+            return
+        }
+        
+        do {
+            backgroundMusicPlayer = try AVAudioPlayer(contentsOf: url)
+            backgroundMusicPlayer?.numberOfLoops = -1 // Бесконечное повторение
+            backgroundMusicPlayer?.volume = currentVolume
+            backgroundMusicPlayer?.play()
+        } catch {
+            print("Не удалось воспроизвести музыку: \(error.localizedDescription)")
+        }
+    }
+    
+    func setMusicVolume(_ volume: Float) {
+        currentVolume = volume
+        backgroundMusicPlayer?.volume = volume
+        UserDefaults.standard.set(volume, forKey: "musicVolume")
+    }
+    
+    private func stopBackgroundMusic() {
+        backgroundMusicPlayer?.stop()
+    }
+
+    // Добавляем методы для управления звуком
+    private func prepareButtonSound() {
+        guard let url = Bundle.main.url(forResource: "buttonClick", withExtension: "mp3") else {
+            print("Не удалось найти файл звука кнопки")
+            return
+        }
+        
+        do {
+            buttonSoundPlayer = try AVAudioPlayer(contentsOf: url)
+            buttonSoundPlayer?.volume = currentSoundVolume
+            buttonSoundPlayer?.prepareToPlay()
+        } catch {
+            print("Не удалось подготовить звук кнопки: \(error.localizedDescription)")
+        }
+    }
+    
+    func playButtonSound() {
+        buttonSoundPlayer?.play()
+        buttonSoundPlayer?.currentTime = 0
+    }
+    
+    // Добавляем методы для звука победы
+    private func prepareVictorySound() {
+        guard let url = Bundle.main.url(forResource: "victory", withExtension: "mp3") else {
+            print("Не удалось найти файл звука победы")
+            return
+        }
+        
+        do {
+            victorySound = try AVAudioPlayer(contentsOf: url)
+            victorySound?.volume = currentSoundVolume
+            victorySound?.prepareToPlay()
+        } catch {
+            print("Не удалось подготовить звук победы: \(error.localizedDescription)")
+        }
+    }
+    
+    func playVictorySound() {
+        victorySound?.play()
+        victorySound?.currentTime = 0
+    }
+
+    // Добавляем методы для звука сбора звездочки
+    private func prepareStarCollectSound() {
+        guard let url = Bundle.main.url(forResource: "star_collect", withExtension: "mp3") else {
+            print("Не удалось найти файл звука сбора звездочки")
+            return
+        }
+        
+        do {
+            starCollectSound = try AVAudioPlayer(contentsOf: url)
+            starCollectSound?.volume = currentSoundVolume
+            starCollectSound?.prepareToPlay()
+        } catch {
+            print("Не удалось подготовить звук сбора звездочки: \(error.localizedDescription)")
+        }
+    }
+    
+    func playStarCollectSound() {
+        starCollectSound?.play()
+        starCollectSound?.currentTime = 0
+    }
+
+    // Добавляем методы для звука удара мяча
+    private func prepareBallHitSound() {
+        guard let url = Bundle.main.url(forResource: "ball_hit", withExtension: "mp3") else {
+            print("Не удалось найти файл звука удара мяча")
+            return
+        }
+        
+        do {
+            ballHitSound = try AVAudioPlayer(contentsOf: url)
+            ballHitSound?.volume = currentSoundVolume
+            ballHitSound?.prepareToPlay()
+        } catch {
+            print("Не удалось подготовить звук удара мяча: \(error.localizedDescription)")
+        }
+    }
+    
+    func playBallHitSound() {
+        ballHitSound?.play()
+        ballHitSound?.currentTime = 0
+    }
+    
+    func setSoundVolume(_ volume: Float) {
+        currentSoundVolume = volume
+        buttonSoundPlayer?.volume = volume
+        victorySound?.volume = volume
+        starCollectSound?.volume = volume
+        ballHitSound?.volume = volume
+        UserDefaults.standard.set(volume, forKey: "soundVolume")
     }
 }
 
@@ -1273,7 +1439,10 @@ struct FallbackView: View {
     var onAchievesTapped: () -> Void
     var onSettingsTapped: () -> Void
     
-    @State private var totalCoins = 0 // Добавляем состояние для хранения количества монет
+    // Добавляем ссылку на GameViewController
+    var gameViewController: GameViewController
+    
+    @State private var totalCoins = 0
     
     var body: some View {
         GeometryReader { geometry in
@@ -1288,7 +1457,10 @@ struct FallbackView: View {
                     // Верхняя панель
                     HStack {
                         // Иконка настроек
-                        Button(action: onSettingsTapped) {
+                        Button(action: {
+                            gameViewController.playButtonSound()
+                            onSettingsTapped()
+                        }) {
                             Image(settingsIconName)
                                 .resizable()
                                 .frame(width: geometry.size.width * 0.12, height: geometry.size.width * 0.12)
@@ -1319,7 +1491,10 @@ struct FallbackView: View {
                     VStack(spacing: geometry.size.height * 0.02) {
                         Spacer()
                         // Кнопка Play
-                        Button(action: onPlayTapped) {
+                        Button(action: {
+                            gameViewController.playButtonSound()
+                            onPlayTapped()
+                        }) {
                             Image(playButtonName)
                                 .resizable()
                                 .scaledToFit()
@@ -1327,7 +1502,10 @@ struct FallbackView: View {
                         }
                         
                         // Кнопка Shop
-                        Button(action: onShopTapped) {
+                        Button(action: {
+                            gameViewController.playButtonSound()
+                            onShopTapped()
+                        }) {
                             Image(shopButtonName)
                                 .resizable()
                                 .scaledToFit()
@@ -1335,7 +1513,10 @@ struct FallbackView: View {
                         }
                         
                         // Кнопка Achieves
-                        Button(action: onAchievesTapped) {
+                        Button(action: {
+                            gameViewController.playButtonSound()
+                            onAchievesTapped()
+                        }) {
                             Image(achievesButtonName)
                                 .resizable()
                                 .scaledToFit()
@@ -1353,7 +1534,6 @@ struct FallbackView: View {
         }
         .edgesIgnoringSafeArea(.all)
         .onAppear {
-            // Загружаем количество монет при появлении экрана
             totalCoins = UserDefaults.standard.integer(forKey: "totalCoins")
         }
     }

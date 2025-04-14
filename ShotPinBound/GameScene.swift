@@ -30,12 +30,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var topBar: SKSpriteNode!
     private var pauseButton: SKSpriteNode!
     private var trajectory: SKShapeNode!
+    private var shotsPanel: SKSpriteNode! // Панель для отображения выстрелов
+    private var starsCountNode: SKSpriteNode! // Панель для отображения звезд
+    private var shotsCountLabel: SKLabelNode! // Текст для отображения количества выстрелов
+    private var starsCountLabel: SKLabelNode! // Текст для отображения количества звезд
     
     // MARK: - Игровые переменные
     public var currentLevel: Int = 1
     public var ballImageName: String = "Ball"
     private var shotsRemaining: Int = 3
-    private var starsCollected: Int = 0
+    public var starsCollected: Int = 0
     private var isAiming: Bool = false
     private var startPosition: CGPoint = .zero
     private var maxPower: CGFloat = 100.0
@@ -121,13 +125,58 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     private func setupUI() {
-        // Кнопка паузы слева
+        // Добавляем верхнюю панель
+        topBar = SKSpriteNode(imageNamed: "TopPanel")
+        // Делаем панель шире (95% от ширины экрана)
+        let panelWidth = frame.width * 0.95
+        // Увеличиваем высоту панели
+        let panelHeight: CGFloat = 80
+        topBar.size = CGSize(width: panelWidth, height: panelHeight)
+        // Располагаем панель с учетом safeArea
+        let safeAreaTop = (view?.safeAreaInsets.top ?? 0)
+        topBar.position = CGPoint(x: frame.midX, y: frame.height - safeAreaTop - panelHeight/2)
+        topBar.zPosition = 10
+        addChild(topBar)
+        
+        // Кнопка паузы (слева на панели)
         pauseButton = SKSpriteNode(imageNamed: "PauseButton")
-        pauseButton.position = CGPoint(x: 40, y: frame.height - 40)
-        pauseButton.size = CGSize(width: 40, height: 40)
+        pauseButton.size = CGSize(width: 50, height: 50)
+        pauseButton.position = CGPoint(x: topBar.frame.minX + 40, y: topBar.position.y)
         pauseButton.zPosition = 11
         pauseButton.name = "pauseButton"
         addChild(pauseButton)
+        
+        // Панель для отображения звезд (в центре)
+        starsCountNode = SKSpriteNode(imageNamed: "Star")
+        starsCountNode.size = CGSize(width: 40, height: 40)
+        starsCountNode.position = CGPoint(x: frame.midX - 20, y: topBar.position.y)
+        starsCountNode.zPosition = 11
+        addChild(starsCountNode)
+        
+        // Текст количества собранных звезд (рядом со звездой)
+        starsCountLabel = SKLabelNode(fontNamed: "Arial-Bold")
+        starsCountLabel.text = "0/3"
+        starsCountLabel.fontSize = 24
+        starsCountLabel.fontColor = .yellow
+        starsCountLabel.position = CGPoint(x: frame.midX + 20, y: topBar.position.y - 8)
+        starsCountLabel.zPosition = 11
+        addChild(starsCountLabel)
+        
+        // Панель для отображения выстрелов (справа)
+        shotsPanel = SKSpriteNode(imageNamed: "ShotsPanel")
+        shotsPanel.size = CGSize(width: 60, height: 60)
+        shotsPanel.position = CGPoint(x: topBar.frame.maxX - 60, y: topBar.position.y)
+        shotsPanel.zPosition = 11
+        addChild(shotsPanel)
+        
+        // Текст количества выстрелов
+        shotsCountLabel = SKLabelNode(fontNamed: "Arial-Bold")
+        shotsCountLabel.text = "\(shotsRemaining)"
+        shotsCountLabel.fontSize = 24
+        shotsCountLabel.fontColor = .white
+        shotsCountLabel.position = CGPoint(x: shotsPanel.position.x, y: shotsPanel.position.y - 8)
+        shotsCountLabel.zPosition = 12
+        addChild(shotsCountLabel)
     }
     
     private func setupGameObjects() {
@@ -625,8 +674,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func shootBall(angle: CGFloat, power: CGFloat) {
         guard shotsRemaining > 0 else { return }
         
-        // Уменьшение количества выстрелов
+        // Уменьшение количества выстрелов и обновление отображения
         shotsRemaining -= 1
+        updateShotsDisplay()
         
         // Настройка физики для мяча
         ball.physicsBody = SKPhysicsBody(circleOfRadius: ball.size.width / 2)
@@ -957,6 +1007,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     private func collectStar(_ star: SKSpriteNode) {
         if stars.contains(star) {
+            // Воспроизводим звук сбора звездочки
+            if let gameVC = self.view?.window?.rootViewController as? GameViewController {
+                gameVC.playStarCollectSound()
+            }
+            
             // Анимация сбора звезды
             let scaleAction = SKAction.scale(to: 1.5, duration: 0.2)
             let fadeAction = SKAction.fadeOut(withDuration: 0.2)
@@ -976,21 +1031,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             // Сохраняем информацию о собранных звездах сразу после сбора
             saveCollectedStars()
+            
+            // Обновляем отображение звезд
+            updateStarsDisplay()
         }
     }
     
     private func showLevelComplete() {
-        // Сохраняем прогресс до создания UI, чтобы гарантировать актуальность данных
-        
-        // Принудительно сохраняем собранные звезды при завершении уровня
-        let key = "starsForLevel\(currentLevel)"
-        let previousStars = UserDefaults.standard.integer(forKey: key)
-        let finalStars = max(starsCollected, previousStars)
-        UserDefaults.standard.set(finalStars, forKey: key)
-        UserDefaults.standard.synchronize()
-        
-        // Теперь сохраняем остальной прогресс
+        // Сохраняем прогресс до создания UI
         saveProgress()
+        
+        // Воспроизводим звук победы
+        if let gameVC = self.view?.window?.rootViewController as? GameViewController {
+            gameVC.playVictorySound()
+        }
         
         // Создание затемнения всего экрана
         let levelCompleteOverlay = SKSpriteNode(color: UIColor.black.withAlphaComponent(0.7), size: self.size)
@@ -1008,7 +1062,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Добавление кастомного лейбла
         let titleLabel = SKSpriteNode(imageNamed: "LevelCompleteLabel")
         titleLabel.size = CGSize(width: 250, height: 80)
-        titleLabel.position = CGPoint(x: 0, y: 220)
+        titleLabel.position = CGPoint(x: 0, y: 120)
         levelComplete.addChild(titleLabel)
         
         // Определяем количество монет в зависимости от уровня
@@ -1024,54 +1078,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             coinsAmount = 50
         }
         
-        // Добавление иконки монеты с текстом
-        let coinIcon = SKSpriteNode(imageNamed: "CoinIcon")
-        coinIcon.size = CGSize(width: 160, height: 80)
-        coinIcon.position = CGPoint(x: 0, y: 120)
-        levelComplete.addChild(coinIcon)
-        
-        // Добавление текста с количеством монет на иконку
-        let coinsText = SKLabelNode(fontNamed: "Arial-BoldItalicMT")
-        coinsText.text = "+\(coinsAmount)"
-        coinsText.fontSize = 26
-        coinsText.fontColor = .orange
-        coinsText.position = CGPoint(x: 0, y: -5)
-        coinIcon.addChild(coinsText)
-        
-        // Добавление звездочек
-        for i in 0..<3 {
-            let starFrame = SKSpriteNode(imageNamed: "StarFrame")
-            starFrame.size = CGSize(width: 40, height: 40)
-            starFrame.position = CGPoint(x: CGFloat(i) * 50 - 50, y: 40)
-            levelComplete.addChild(starFrame)
-            
-            // Используем текущее количество собранных звезд для отображения
-            if i < starsCollected {
-                let star = SKSpriteNode(imageNamed: "StarFilled")
-                star.size = CGSize(width: 30, height: 30)
-                star.position = CGPoint.zero
-                starFrame.addChild(star)
-            } else {
-                // Для неактивных звезд используем полупрозрачную версию
-                let star = SKSpriteNode(imageNamed: "StarFilled")
-                star.size = CGSize(width: 30, height: 30)
-                star.position = CGPoint.zero
-                star.alpha = 0.3 // Делаем неактивные звезды полупрозрачными
-                starFrame.addChild(star)
-            }
-        }
-        
         // Добавление кнопки Next
         let nextButton = SKSpriteNode(imageNamed: "NextButton")
         nextButton.size = CGSize(width: 200, height: 100)
-        nextButton.position = CGPoint(x: 0, y: -40)
+        nextButton.position = CGPoint(x: 0, y: 0)
         nextButton.name = "nextButton"
         levelComplete.addChild(nextButton)
         
         // Добавление кнопки Home
         let homeButton = SKSpriteNode(imageNamed: "HomeButton")
         homeButton.size = CGSize(width: 200, height: 100)
-        homeButton.position = CGPoint(x: 0, y: -160)
+        homeButton.position = CGPoint(x: 0, y: -120)
         homeButton.name = "homeButton"
         levelComplete.addChild(homeButton)
         
@@ -1177,12 +1194,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func didBegin(_ contact: SKPhysicsContact) {
         let collision = contact.bodyA.categoryBitMask | contact.bodyB.categoryBitMask
         
+        // Воспроизводим звук удара при столкновении с препятствиями
+        if collision == PhysicsCategory.ball | PhysicsCategory.wall ||
+           collision == PhysicsCategory.ball | PhysicsCategory.ground {
+            if let gameVC = self.view?.window?.rootViewController as? GameViewController {
+                gameVC.playBallHitSound()
+            }
+        }
+        
         if collision == PhysicsCategory.ball | PhysicsCategory.star {
             // Определение звезды в контакте
             let star = contact.bodyA.categoryBitMask == PhysicsCategory.star ? contact.bodyA.node as! SKSpriteNode : contact.bodyB.node as! SKSpriteNode
             
             // Сбор звезды
             collectStar(star)
+            // Обновляем отображение звезд
+            updateStarsDisplay()
         }
         
         if collision == PhysicsCategory.ball | PhysicsCategory.deadWall {
@@ -1209,6 +1236,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Сброс паузы
         isPaused = false
         
+        // Сброс счетчика собранных звезд
+        starsCollected = 0
+        updateStarsDisplay()
+        
         // Сохраняем прогресс - разблокируем следующий уровень, если он доступен
         if currentLevel < 4 {
             let nextLevel = currentLevel + 1
@@ -1223,6 +1254,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Переходим на следующий уровень
             currentLevel = nextLevel
             setupLevel(level: currentLevel)
+            
+            // Обновляем количество выстрелов для нового уровня
+            shotsRemaining = currentLevel == 1 ? 3 : currentLevel + 2
+            updateShotsDisplay()
         } else {
             // Если это последний уровень, возвращаемся в меню
             returnToMainMenu()
@@ -1242,9 +1277,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Восстанавливаем количество выстрелов для уровня
         shotsRemaining = currentLevel == 1 ? 3 : currentLevel + 2
+        updateShotsDisplay()
         
-        // Сбрасываем счетчик собранных звезд в текущей сессии
+        // Сбрасываем счетчик собранных звезд
         starsCollected = 0
+        updateStarsDisplay()
         
         // Сбрасываем мяч на начальную позицию
         resetBall()
@@ -1415,6 +1452,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         isGameRunning = false
         canShoot = true
+    }
+    
+    // Обновление отображения количества выстрелов
+    private func updateShotsDisplay() {
+        shotsCountLabel.text = "\(shotsRemaining)"
+    }
+    
+    // Обновление отображения количества звезд
+    private func updateStarsDisplay() {
+        starsCountLabel.text = "\(starsCollected)/3"
     }
 }
 
