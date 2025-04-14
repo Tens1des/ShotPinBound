@@ -478,8 +478,10 @@ struct ShopView: View {
                         .aspectRatio(contentMode: .fit)
                         .frame(width: elementWidth)
                 }
-                .disabled((!isPurchased && totalCoins < cost) || isPurchased)
-                .opacity(isActive || isPurchased ? 1.0 : 0.5)
+                .disabled(isPurchased || (elementName != "Element1" && !isPurchased)) // Отключаем все кнопки кроме первого элемента
+                .opacity(elementName == "Element1" ? 
+                    ((!isPurchased && totalCoins < cost) ? 0.5 : 1.0) : // Для первого элемента
+                    (isActive || isPurchased ? 1.0 : 0.5)) // Для остальных элементов
             }
         }
     }
