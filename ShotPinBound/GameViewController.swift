@@ -491,7 +491,6 @@ struct ShopView: View {
 struct AchievesView: View {
     // Имена файлов изображений
     private let backgroundImageName = "AchievesBG"
-    private let achievesPanelName = "AchievesPanel"
     private let backButtonName = "BackButton"
     private let achievesTitleName = "AchievesTitle"
     private let achieveStarName = "AchieveStar"
@@ -523,20 +522,25 @@ struct AchievesView: View {
             // Размеры элементов, адаптированные для разных устройств
             let headerButtonSize = baseUnit * (isIpad ? 1.0 : 1.2)
             let titleWidth = baseUnit * (isIpad ? 3.0 : 3.5)
-            let achieveWidth = baseUnit * (isIpad ? 5.5 : 5.0) * (isLandscape ? 0.85 : 1.0)
-            let achieveHeight = baseUnit * (isIpad ? 2.0 : 1.8) * (isLandscape ? 0.85 : 1.0)
+            let achieveWidth = baseUnit * (isIpad ? 5.5 : 5.0)
+            let achieveHeight = baseUnit * (isIpad ? 2.0 : 1.8)
             let spacing = baseUnit * (isIpad ? 0.2 : 0.3)
             let starSize = baseUnit * (isIpad ? 0.6 : 0.8)
             let panelPadding = baseUnit * (isIpad ? 0.5 : 0.3)
-            let panelWidth = screenWidth * (isLandscape ? 0.85 : 0.95)
+            let panelWidth = screenWidth * 0.95
             
             ZStack {
-                // Фон
+                // Черный фон
+                Color.black
+                    .ignoresSafeArea()
+                
+                // Кастомный фон
                 Image(backgroundImageName)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .edgesIgnoringSafeArea(.all)
+                    .opacity(0.6)
+                    .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
                     // Верхняя панель
@@ -547,18 +551,19 @@ struct AchievesView: View {
                                 .aspectRatio(contentMode: .fit)
                                 .frame(width: headerButtonSize)
                         }
-                        .padding(.leading, baseUnit * 0.5)
+                        .padding(.leading, baseUnit * 0.3)
                         
                         Spacer()
                     }
-                    .padding(.top, safeTop + baseUnit * 0.3)
+                    .padding(.top, safeTop + baseUnit * 0.2)
+                    .frame(maxWidth: .infinity)
                     
                     // Заголовок
                     Image(achievesTitleName)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: titleWidth)
-                        .padding(.top, baseUnit * 0.3)
+                        .padding(.top, baseUnit * 0.2)
                     
                     // ScrollView с панелью достижений
                     ScrollView(.vertical, showsIndicators: false) {
@@ -609,20 +614,11 @@ struct AchievesView: View {
                             )
                         }
                         .padding(.vertical, baseUnit * 0.3)
-                        .padding(.horizontal, baseUnit * 0.5)
-                        .background(
-                            Image(achievesPanelName)
-                                .resizable()
-                                .scaledToFill()
-                        )
-                        .frame(width: panelWidth)
-                        .padding(.bottom, safeBottom + baseUnit * 2)
-                        .padding(.top, baseUnit * 0.5)
+                        .frame(maxWidth: .infinity)
                     }
-                    .padding(.horizontal, baseUnit * 0.2)
-                    
-                    Spacer(minLength: 0)
+                    .frame(maxWidth: .infinity)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .edgesIgnoringSafeArea(.all)
@@ -1430,7 +1426,6 @@ struct FallbackView: View {
     // Имена файлов изображений
     private let backgroundImageName = "MainBackground"
     private let settingsIconName = "SettingsIcon"
-    private let coinIconName = "CoinIcon"
     private let playButtonName = "PlayButton"
     private let shopButtonName = "ShopButton"
     private let achievesButtonName = "AchievesButton"
@@ -1472,18 +1467,7 @@ struct FallbackView: View {
                         Spacer()
                         
                         // Счетчик монет
-                        Image(coinIconName)
-                            .resizable()
-                            .frame(width: geometry.size.width * 0.3, height: geometry.size.width * 0.12)
-                            .overlay(
-                                Text("\(totalCoins)")
-                                    .foregroundColor(.yellow)
-                                    .font(.system(size: geometry.size.width * 0.06, weight: .bold))
-                                    .padding(.leading, geometry.size.width * 0.07)
-                                    .padding(.bottom, 5)
-                                , alignment: .center
-                            )
-                            .padding(.trailing)
+                        
                     }
                     .padding(.top, geometry.safeAreaInsets.top + 10)
                     

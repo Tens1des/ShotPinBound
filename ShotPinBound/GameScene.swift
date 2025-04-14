@@ -1062,7 +1062,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Добавление кастомного лейбла
         let titleLabel = SKSpriteNode(imageNamed: "LevelCompleteLabel")
         titleLabel.size = CGSize(width: 250, height: 80)
-        titleLabel.position = CGPoint(x: 0, y: 120)
+        titleLabel.position = CGPoint(x: 0, y: 220)
         levelComplete.addChild(titleLabel)
         
         // Определяем количество монет в зависимости от уровня
@@ -1078,17 +1078,49 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             coinsAmount = 50
         }
         
+        // Добавление иконки монеты с текстом
+        let coinIcon = SKSpriteNode(imageNamed: "CoinIcon")
+        coinIcon.size = CGSize(width: 160, height: 80)
+        coinIcon.position = CGPoint(x: 0, y: 120)
+        levelComplete.addChild(coinIcon)
+        
+        // Добавление текста с количеством монет на иконку
+        let coinsText = SKLabelNode(fontNamed: "Arial-BoldItalicMT")
+        coinsText.text = "+\(coinsAmount)"
+        coinsText.fontSize = 26
+        coinsText.fontColor = .orange
+        coinsText.position = CGPoint(x: 0, y: -5)
+        coinIcon.addChild(coinsText)
+        
+        // Отображение заработанных звезд
+        let starsNode = SKNode()
+        starsNode.position = CGPoint(x: 0, y: 40)
+        levelComplete.addChild(starsNode)
+        
+        // Отображаем звезды в ряд
+        let starSpacing: CGFloat = 40
+        let starSize = CGSize(width: 50, height: 50)
+        
+        for i in 0..<3 {
+            let starX = CGFloat(i - 1) * starSpacing * 1.5
+            let starImageName = i < starsCollected ? "StarFilled" : "StarEmpty"
+            let star = SKSpriteNode(imageNamed: starImageName)
+            star.size = starSize
+            star.position = CGPoint(x: starX, y: 0)
+            starsNode.addChild(star)
+        }
+        
         // Добавление кнопки Next
         let nextButton = SKSpriteNode(imageNamed: "NextButton")
         nextButton.size = CGSize(width: 200, height: 100)
-        nextButton.position = CGPoint(x: 0, y: 0)
+        nextButton.position = CGPoint(x: 0, y: -40)
         nextButton.name = "nextButton"
         levelComplete.addChild(nextButton)
         
         // Добавление кнопки Home
         let homeButton = SKSpriteNode(imageNamed: "HomeButton")
         homeButton.size = CGSize(width: 200, height: 100)
-        homeButton.position = CGPoint(x: 0, y: -120)
+        homeButton.position = CGPoint(x: 0, y: -160)
         homeButton.name = "homeButton"
         levelComplete.addChild(homeButton)
         
