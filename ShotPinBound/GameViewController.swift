@@ -73,8 +73,8 @@ struct LevelsView: View {
             let fontSize = baseUnit * (isIpad ? 0.25 : 0.3)
             let levelButtonSize = baseUnit * (isIpad ? 1.5 : 1.8) * (isLandscape ? 0.85 : 1.0)
             let containerWidth = screenWidth * (isLandscape ? 0.9 : 0.95)
-            let starSize = levelButtonSize * (isIpad ? 0.12 : 0.15)
-            let iconSize = levelButtonSize * (isIpad ? 0.25 : 0.3)
+            let starSize = levelButtonSize * (isIpad ? 0.10 : 0.15)
+            let iconSize = levelButtonSize * (isIpad ? 0.30 : 0.4)
             let gridSpacing = baseUnit * (isIpad ? 0.15 : 0.2) * (isLandscape ? 1.0 : 0.8)
             
             ZStack {
@@ -126,10 +126,10 @@ struct LevelsView: View {
                                 // Используем лаконичную и гибкую LazyVGrid
                                 LazyVGrid(
                                     columns: Array(
-                                        repeating: GridItem(.flexible(), spacing: gridSpacing),
+                                        repeating: GridItem(.flexible(), spacing: gridSpacing * 1.5),
                                         count: isLandscape ? 5 : 3
                                     ),
-                                    spacing: gridSpacing
+                                    spacing: gridSpacing * 1.5
                                 ) {
                                     ForEach(1...levelsCount, id: \.self) { level in
                                         Button(action: {
@@ -176,7 +176,7 @@ struct LevelsView: View {
                                                 
                                                 // Звездочки
                                                 if levelState == .completed {
-                                                    HStack(spacing: levelButtonSize * 0.03) {
+                                                    HStack(spacing: levelButtonSize * 0.02) {
                                                         ForEach(1...3, id: \.self) { starIndex in
                                                             let starsEarned = starsPerLevel[level] ?? 0
                                                             Image(starIndex <= starsEarned ? starFilledName : starEmptyName)
@@ -185,9 +185,9 @@ struct LevelsView: View {
                                                                 .frame(width: starSize)
                                                         }
                                                     }
-                                                    .offset(y: levelButtonSize * 0.2)
+                                                    .offset(x: -levelButtonSize * 0.03, y: levelButtonSize * 0.20)
                                                 } else if levelState == .active {
-                                                    HStack(spacing: levelButtonSize * 0.03) {
+                                                    HStack(spacing: levelButtonSize * 0.02) {
                                                         ForEach(1...3, id: \.self) { _ in
                                                             Image(starEmptyName)
                                                                 .resizable()
@@ -195,7 +195,7 @@ struct LevelsView: View {
                                                                 .frame(width: starSize)
                                                         }
                                                     }
-                                                    .offset(y: levelButtonSize * 0.2)
+                                                    .offset(x: -levelButtonSize * 0.03, y: levelButtonSize * 0.20)
                                                 }
                                             }
                                         }
@@ -203,7 +203,7 @@ struct LevelsView: View {
                                     }
                                 }
                                 .padding(.horizontal, baseUnit * 0.3)
-                                .padding(.vertical, baseUnit * 0.3)
+                                .padding(.vertical, baseUnit * 0.2)
                             }
                         )
                         .padding(.bottom, safeBottom + baseUnit * 0.3)

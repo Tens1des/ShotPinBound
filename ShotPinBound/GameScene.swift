@@ -629,7 +629,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let starImageName = currentLevel == 1 ? "Star" : "Star" // Пока используем одинаковые звезды
         let star = SKSpriteNode(imageNamed: starImageName)
         star.position = position
-        star.size = CGSize(width: 30, height: 30)
+        star.size = CGSize(width: 25, height: 25)
         star.zPosition = 1
         
         // Настройка физики для звезды
@@ -1098,11 +1098,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         levelComplete.addChild(starsNode)
         
         // Отображаем звезды в ряд
-        let starSpacing: CGFloat = 40
-        let starSize = CGSize(width: 50, height: 50)
+        let starSpacing: CGFloat = 55
+        let starSize = CGSize(width: 40, height: 40)
         
         for i in 0..<3 {
-            let starX = CGFloat(i - 1) * starSpacing * 1.5
+            let starX = CGFloat(i - 1) * starSpacing
             let starImageName = i < starsCollected ? "StarFilled" : "StarEmpty"
             let star = SKSpriteNode(imageNamed: starImageName)
             star.size = starSize
